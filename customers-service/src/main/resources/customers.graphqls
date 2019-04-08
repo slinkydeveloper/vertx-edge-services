@@ -1,0 +1,19 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  customers: [Customer!]!
+  customer(id: ID!): Customer
+}
+
+type Mutation {
+  addCustomer(name: String!): Customer
+  removeCustomer(id: ID!): Customer
+}
+
+type Customer {
+  id: ID!
+  name: String!
+}
