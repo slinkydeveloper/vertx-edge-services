@@ -1,0 +1,92 @@
+openapi: 3.0.2
+info:
+  title: Beers Rest Service
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+  version: 1.0.0
+servers:
+  -
+    url: 'http://petstore.swagger.io/api'
+paths:
+  /beer:
+    get:
+      summary: Get a list of beers
+      operationId: getBeersList
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Beer"
+    post:
+      summary: Add a beer
+      operationId: addBeer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewBeer"
+      responses:
+        '200':
+          description: "OK"
+  /beer/{beerId}:
+    parameters:
+      - name: beerId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      summary: Get a single beer
+      operationId: getBeer
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beer"
+    delete:
+      summary: Remove a beer
+      operationId: removeBeer
+      responses:
+        '200':
+          description: "OK"
+components:
+  schemas:
+    NewBeer:
+      properties:
+        name:
+          type: string
+        styleId:
+          type: integer
+          format: int64
+        price:
+          type: number
+      required:
+        - name
+        - styleId
+        - price
+      additionalProperties: false
+    Beer:
+      allOf:
+        - $ref: "#/components/schemas/NewBeer"
+        - properties:
+            id:
+              type: integer
+              format: int64
+    Error:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          format: int32
+          type: integer
+        message:
+          type: string
