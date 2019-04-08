@@ -32,7 +32,7 @@ public class MainVerticle extends AbstractVerticle {
           rc.failure().printStackTrace(System.err);
           rc.response().setStatusCode(500).end(rc.failure().getMessage());
         });
-        server = vertx.createHttpServer(new HttpServerOptions().setPort(8080).setHost("localhost"));
+        server = vertx.createHttpServer(new HttpServerOptions().setPort(9001).setHost("localhost"));
         server.requestHandler(router).listen();
         future.complete();
       } else {

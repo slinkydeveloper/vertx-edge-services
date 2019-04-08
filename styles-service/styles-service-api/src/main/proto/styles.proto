@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.slinkydeveloper.brewery.styles";
+option java_outer_classname = "StylesGRPC";
+
+package styles;
+
+service StylesService {
+  rpc GetStyle (StyleId) returns (Style) {}
+  rpc GetStyles (Empty) returns (Styles) {}
+  rpc AddStyle (NewStyle) returns (StyleId) {}
+  rpc RemoveStyle (StyleId) returns (Empty) {}
+}
+
+message Empty {}
+
+message StyleId {
+  int64 id = 1;
+}
+
+message NewStyle {
+  string name = 1;
+  string description = 2;
+}
+
+message Style {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message Styles {
+  repeated Style styles = 1;
+}
