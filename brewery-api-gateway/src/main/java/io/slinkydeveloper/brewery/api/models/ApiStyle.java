@@ -5,25 +5,25 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.core.json.JsonObject;
 
 @DataObject(generateConverter = true, publicConverter = false)
-public class Style {
+public class ApiStyle {
 
   Long styleId;
   String name;
   String description;
 
-  public Style(Long styleId, String name, String description) {
+  public ApiStyle(Long styleId, String name, String description) {
     this.styleId = styleId;
     this.name = name;
     this.description = description;
   }
 
-  public Style(JsonObject obj) {
-    StyleConverter.fromJson(obj, this);
+  public ApiStyle(JsonObject obj) {
+    ApiStyleConverter.fromJson(obj, this);
   }
 
   public JsonObject toJson() {
     JsonObject json = new JsonObject();
-    StyleConverter.toJson(this, json);
+    ApiStyleConverter.toJson(this, json);
     return json;
   }
 
@@ -32,7 +32,7 @@ public class Style {
   }
 
   @Fluent
-  public Style setStyleId(Long styleId) {
+  public ApiStyle setStyleId(Long styleId) {
     this.styleId = styleId;
     return this;
   }
@@ -42,7 +42,7 @@ public class Style {
   }
 
   @Fluent
-  public Style setName(String name) {
+  public ApiStyle setName(String name) {
     this.name = name;
     return this;
   }
@@ -52,7 +52,7 @@ public class Style {
   }
 
   @Fluent
-  public Style setDescription(String description) {
+  public ApiStyle setDescription(String description) {
     this.description = description;
     return this;
   }

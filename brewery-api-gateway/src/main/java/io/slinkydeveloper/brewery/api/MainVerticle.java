@@ -1,30 +1,17 @@
 package io.slinkydeveloper.brewery.api;
 
 import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import io.reactivex.SingleSource;
-import io.slinkydeveloper.brewery.api.models.Beer;
-import io.slinkydeveloper.brewery.api.models.Style;
 import io.slinkydeveloper.brewery.beers.client.impl.BeersApiClientImpl;
 import io.slinkydeveloper.brewery.beers.reactivex.client.BeersApiClient;
 import io.slinkydeveloper.brewery.order.reactivex.api.OrderService;
-import io.slinkydeveloper.brewery.styles.StyleId;
 import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
-import io.vertx.core.VertxOptions;
-import io.vertx.core.eventbus.EventBusOptions;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.bridge.BridgeOptions;
-import io.vertx.ext.bridge.PermittedOptions;
+import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpServer;
-import io.vertx.reactivex.ext.eventbus.bridge.tcp.TcpEventBusBridge;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.client.WebClient;
-import io.vertx.reactivex.impl.AsyncResultSingle;
+import io.vertx.reactivex.ext.web.handler.BodyHandler;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -47,45 +34,47 @@ public class MainVerticle extends AbstractVerticle {
         .usePlaintext(true)
         .build()
     );
-    WebClient customersServiceClient = WebClient.create(vertx);
+    WebClient customersServiceClient = WebClient.create(vertx, new WebClientOptions().setDefaultHost("localhost").setDefaultPort(9003));
     OrderService orderServiceProxy = OrderService.createProxy(vertx, "orders.myapplication");
+
+    BeersHandlers beersHandlers = new BeersHandlers(beersServiceClient, stylesServiceClient);
+    CustomersHandlers customersHandlers = new CustomersHandlers(customersServiceClient);
+    OrdersHandlers ordersHandlers = new OrdersHandlers(beersServiceClient, stylesServiceClient, customersServiceClient, orderServiceProxy, beersHandlers);
 
     Router router = Router.router(vertx);
     router
-      .get("/beers")
-      .handler(rc ->
-        beersServiceClient
-          .rxGetBeersList()
-          .flatMapObservable(httpResponse -> Observable.fromIterable(httpResponse.bodyAsJsonArray()))
-          .map(o -> new io.slinkydeveloper.brewery.beers.client.models.Beer((JsonObject)o))
-          .<Beer>flatMapSingle(beer ->
-            x -> AsyncResultSingle.<io.slinkydeveloper.brewery.styles.Style>
-              toSingle(
-                h -> stylesServiceClient.getStyle(StyleId.newBuilder().setId(beer.getStyleId()).build(), h)
-              ).map(style ->
-                new Beer(
-                  beer.getName(),
-                  new Style(
-                    style.getId(),
-                    style.getName(),
-                    style.getDescription()
-                  ),
-                  beer.getPrice(),
-                  beer.getId()
-                )
-              ).subscribe(x)
-          )
-          .collectInto(new JsonArray(), (j, beer) -> j.add(beer.toJson()))
-          .subscribe(
-            result ->
-              rc
-                .response()
-                .setStatusCode(200)
-                .putHeader("content-type", "application/json")
-                .end(result.encode()),
-            rc::fail
-          )
-      );
+      .route()
+      .handler(BodyHandler.create());
+    router
+      .get("/beer")
+      .handler(beersHandlers::handleGetBeers);
+    router
+      .post("/beer")
+      .handler(beersHandlers::handlePostBeer);
+
+    router
+      .get("/customer")
+      .handler(customersHandlers::handleGetCustomers);
+
+    router
+      .post("/customer")
+      .handler(customersHandlers::handleAddCustomer);
+
+    router
+      .get("/order/:id")
+      .handler(ordersHandlers::handleGetOrder);
+
+    router
+      .post("/order")
+      .handler(ordersHandlers::handlePostOrder);
+
+    router.errorHandler(500, rc -> {
+      rc.failure().printStackTrace();
+      rc
+        .response()
+        .setStatusCode(500)
+        .end();
+    });
 
     HttpServer server = vertx.createHttpServer();
     server.requestHandler(router);

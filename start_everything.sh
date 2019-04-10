@@ -13,4 +13,4 @@ cd ../../customers-service
 mvn vertx:start
 
 cd ../brewery-api-gateway
-mvn vertx:start
+mvn vertx:run

@@ -63,6 +63,10 @@
         <groupId>io.vertx</groupId>
         <artifactId>vertx-tcp-eventbus-bridge</artifactId>
       </dependency>
+      <dependency>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-hazelcast</artifactId>
+      </dependency>
     </dependencies>
 
   <build>
@@ -82,6 +86,9 @@
         </executions>
         <configuration>
           <redeploy>true</redeploy>
+          <runArgs>
+            <runArg>--cluster</runArg>
+          </runArgs>
         </configuration>
       </plugin>
     </plugins>

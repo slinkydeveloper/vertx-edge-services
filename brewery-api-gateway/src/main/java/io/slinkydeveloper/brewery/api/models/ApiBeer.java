@@ -6,16 +6,16 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.Shareable;
 
 @DataObject(generateConverter = true, publicConverter = false)
-public class Beer implements Shareable {
+public class ApiBeer implements Shareable {
 
   private String name;
   private Float price;
-  private Style style;
+  private ApiStyle style;
   private Long id;
 
-  public Beer(
+  public ApiBeer(
     String name,
-    Style style,
+    ApiStyle style,
     Float price,
     Long id
   ) {
@@ -25,11 +25,11 @@ public class Beer implements Shareable {
     this.id = id;
   }
 
-  public Beer(JsonObject json) {
-    BeerConverter.fromJson(json, this);
+  public ApiBeer(JsonObject json) {
+    ApiBeerConverter.fromJson(json, this);
   }
 
-  public Beer(Beer other) {
+  public ApiBeer(ApiBeer other) {
     this.name = other.getName();
     this.price = other.getPrice();
     this.style = other.getStyle();
@@ -38,11 +38,11 @@ public class Beer implements Shareable {
 
   public JsonObject toJson() {
     JsonObject json = new JsonObject();
-    BeerConverter.toJson(this, json);
+    ApiBeerConverter.toJson(this, json);
     return json;
   }
 
-  @Fluent public Beer setName(String name){
+  @Fluent public ApiBeer setName(String name){
     this.name = name;
     return this;
   }
@@ -50,7 +50,7 @@ public class Beer implements Shareable {
     return this.name;
   }
 
-  @Fluent public Beer setPrice(Float price){
+  @Fluent public ApiBeer setPrice(Float price){
     this.price = price;
     return this;
   }
@@ -58,17 +58,17 @@ public class Beer implements Shareable {
     return this.price;
   }
 
-  public Style getStyle() {
+  public ApiStyle getStyle() {
     return style;
   }
 
   @Fluent
-  public Beer setStyle(Style style) {
+  public ApiBeer setStyle(ApiStyle style) {
     this.style = style;
     return this;
   }
 
-  @Fluent public Beer setId(Long id){
+  @Fluent public ApiBeer setId(Long id){
     this.id = id;
     return this;
   }
@@ -78,7 +78,7 @@ public class Beer implements Shareable {
 
   @Override
   public Shareable copy() {
-    return new Beer(this);
+    return new ApiBeer(this);
   }
 
 }

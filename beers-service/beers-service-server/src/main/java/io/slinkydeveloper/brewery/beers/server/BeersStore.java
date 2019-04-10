@@ -22,7 +22,11 @@ public class BeersStore {
     RequestParameters params = context.get("parsedParameters");
     Beer b = Beer.fromNewBeer(new NewBeer(params.body().getJsonObject()));
     beers.put(b.getId(), b);
-    context.response().setStatusCode(200).end();
+    context
+      .response()
+      .setStatusCode(200)
+      .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+      .end(b.toJson().encode());
   }
 
   public void handleGetBeersList(RoutingContext context) {

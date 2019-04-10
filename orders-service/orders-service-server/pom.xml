@@ -17,7 +17,7 @@
   </parent>
 
   <properties>
-    <vertx.verticle>io.slinkydeveloper.brewery.order.server.MainVerticle</vertx.verticle>
+    <vertx.verticle>io.slinkydeveloper.brewery.order.service.MainVerticle</vertx.verticle>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -47,7 +47,7 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-tcp-eventbus-bridge</artifactId>
+      <artifactId>vertx-hazelcast</artifactId>
     </dependency>
   </dependencies>
 
@@ -68,6 +68,9 @@
         </executions>
         <configuration>
           <redeploy>true</redeploy>
+          <runArgs>
+            <runArg>--cluster</runArg>
+          </runArgs>
         </configuration>
       </plugin>
     </plugins>
