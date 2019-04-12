@@ -1,13 +1,11 @@
 package io.slinkydeveloper.brewery.api;
 
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.reactivex.Completable;
 import io.slinkydeveloper.brewery.beers.client.impl.BeersApiClientImpl;
 import io.slinkydeveloper.brewery.beers.reactivex.client.BeersApiClient;
 import io.slinkydeveloper.brewery.order.reactivex.api.OrderService;
 import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
+import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.reactivex.core.AbstractVerticle;
@@ -20,25 +18,23 @@ public class MainVerticle extends AbstractVerticle {
 
   @Override
   public Completable rxStart() {
-    CircuitBreakerRegistry registry = CircuitBreakerRegistry.of(
-      CircuitBreakerConfig.custom()
-        .build()
-    );
+    CircuitBreakerOptions circuitBreakerOptions = new CircuitBreakerOptions()
+      .setMaxRetries(3);
 
     // Create the clients
     BeersApiClient beersServiceClient = BeersApiClient.newInstance(new BeersApiClientImpl(vertx.getDelegate(), "localhost", 9001));
-    CircuitBreaker beersCircuitBreaker = registry.circuitBreaker("beers");
+    RxCircuitBreaker beersCircuitBreaker = RxCircuitBreaker.create("beers", vertx, circuitBreakerOptions);
     StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient = StylesServiceGrpc.newVertxStub(
       VertxChannelBuilder
         .forAddress(vertx.getDelegate(), "localhost", 9000)
         .usePlaintext(true)
         .build()
     );
-    CircuitBreaker stylesCircuitBreaker = registry.circuitBreaker("styles");
+    RxCircuitBreaker stylesCircuitBreaker = RxCircuitBreaker.create("styles", vertx, circuitBreakerOptions);
     WebClient customersServiceClient = WebClient.create(vertx, new WebClientOptions().setDefaultHost("localhost").setDefaultPort(9003));
-    CircuitBreaker customersCircuitBreaker = registry.circuitBreaker("customers");
+    RxCircuitBreaker customersCircuitBreaker = RxCircuitBreaker.create("customers", vertx, circuitBreakerOptions);
     OrderService orderServiceProxy = OrderService.createProxy(vertx, "orders.myapplication");
-    CircuitBreaker ordersCircuitBreaker = registry.circuitBreaker("orders");
+    RxCircuitBreaker ordersCircuitBreaker = RxCircuitBreaker.create("orders", vertx, circuitBreakerOptions);
 
     BeersHandlers beersHandlers = new BeersHandlers(beersServiceClient, beersCircuitBreaker, stylesServiceClient, stylesCircuitBreaker);
     CustomersHandlers customersHandlers = new CustomersHandlers(customersServiceClient);

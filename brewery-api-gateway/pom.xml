@@ -79,14 +79,8 @@
         <artifactId>vertx-hazelcast</artifactId>
       </dependency>
       <dependency>
-        <groupId>io.github.resilience4j</groupId>
-        <artifactId>resilience4j-circuitbreaker</artifactId>
-        <version>0.14.1</version>
-      </dependency>
-      <dependency>
-        <groupId>io.github.resilience4j</groupId>
-        <artifactId>resilience4j-rxjava2</artifactId>
-        <version>0.14.1</version>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-circuit-breaker</artifactId>
       </dependency>
     </dependencies>
 

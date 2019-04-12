@@ -1,7 +1,5 @@
 package io.slinkydeveloper.brewery.api;
 
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import io.github.resilience4j.circuitbreaker.operator.CircuitBreakerOperator;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.slinkydeveloper.brewery.api.models.ApiOrder;
@@ -22,14 +20,14 @@ import java.util.stream.Collectors;
 public class OrdersHandlers {
 
   private BeersApiClient beersServiceClient;
-  private CircuitBreaker beersCircuitBreaker;
+  private RxCircuitBreaker beersCircuitBreaker;
   private WebClient customersServiceClient;
-  private CircuitBreaker customersCircuitBreaker;
+  private RxCircuitBreaker customersCircuitBreaker;
   private OrderService orderServiceProxy;
-  private CircuitBreaker ordersCircuitBreaker;
+  private RxCircuitBreaker ordersCircuitBreaker;
   private BeersHandlers beersHandlers;
 
-  public OrdersHandlers(BeersApiClient beersServiceClient, CircuitBreaker beersCircuitBreaker, WebClient customersServiceClient, CircuitBreaker customersCircuitBreaker, OrderService orderServiceProxy, CircuitBreaker ordersCircuitBreaker, BeersHandlers beersHandlers) {
+  public OrdersHandlers(BeersApiClient beersServiceClient, RxCircuitBreaker beersCircuitBreaker, WebClient customersServiceClient, RxCircuitBreaker customersCircuitBreaker, OrderService orderServiceProxy, RxCircuitBreaker ordersCircuitBreaker, BeersHandlers beersHandlers) {
     this.beersServiceClient = beersServiceClient;
     this.beersCircuitBreaker = beersCircuitBreaker;
     this.customersServiceClient = customersServiceClient;
@@ -43,7 +41,6 @@ public class OrdersHandlers {
     this
       .orderServiceProxy
       .rxGetOrder(Long.parseLong(routingContext.pathParam("id")))
-      .lift(CircuitBreakerOperator.of(ordersCircuitBreaker))
       .onErrorResumeNext(t -> Single.error(new WebException(503, "Service unavailable")))
       .flatMap(o -> (o == null) ? Single.error(new WebException(404, "Cannot find order")) : Single.just(o))
       .flatMap(this::fillOrder)
@@ -64,7 +61,6 @@ public class OrdersHandlers {
       .expect(ResponsePredicate.SC_SUCCESS)
       .expect(ResponsePredicate.JSON)
       .rxSendBuffer(Buffer.buffer("{\"query\":\"query {customer(id: \\\"" + order.getCustomerId() + "\\\"){id,name}}\\n\"}"))
-      .lift(CircuitBreakerOperator.of(customersCircuitBreaker))
       .onErrorResumeNext(t -> Single.error(new WebException(500, t)))
       .map(HttpResponse::bodyAsJsonObject)
       .map(jo -> jo.getJsonObject("data").getJsonObject("customer"))

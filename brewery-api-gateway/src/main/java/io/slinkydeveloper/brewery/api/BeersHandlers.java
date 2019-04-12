@@ -1,7 +1,5 @@
 package io.slinkydeveloper.brewery.api;
 
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import io.github.resilience4j.circuitbreaker.operator.CircuitBreakerOperator;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.slinkydeveloper.brewery.api.models.ApiBeer;
@@ -21,11 +19,11 @@ import io.vertx.reactivex.impl.AsyncResultSingle;
 public class BeersHandlers {
 
   BeersApiClient beersServiceClient;
-  CircuitBreaker beersCircuitBreaker;
+  RxCircuitBreaker beersCircuitBreaker;
   StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient;
-  CircuitBreaker stylesCircuitBreaker;
+  RxCircuitBreaker stylesCircuitBreaker;
 
-  public BeersHandlers(BeersApiClient beersServiceClient, CircuitBreaker beersCircuitBreaker, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient, CircuitBreaker stylesCircuitBreaker) {
+  public BeersHandlers(BeersApiClient beersServiceClient, RxCircuitBreaker beersCircuitBreaker, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient, RxCircuitBreaker stylesCircuitBreaker) {
     this.beersServiceClient = beersServiceClient;
     this.beersCircuitBreaker = beersCircuitBreaker;
     this.stylesServiceClient = stylesServiceClient;
@@ -33,11 +31,12 @@ public class BeersHandlers {
   }
 
   public void handleGetBeers(RoutingContext rc) {
-    beersServiceClient
-      .rxGetBeersList()
-      .flatMap(res -> res.statusCode() != 200 ? Single.error(new WebException(500, "Beers service error")) : Single.just(res))
-      .retry(3)
-      .lift(CircuitBreakerOperator.of(beersCircuitBreaker))
+    beersCircuitBreaker
+      .execute(
+        beersServiceClient
+          .rxGetBeersList()
+          .flatMap(res -> res.statusCode() != 200 ? Single.error(new WebException(500, "Beers service error")) : Single.just(res))
+      )
       .onErrorResumeNext(t -> Single.error(new WebException(503, "Beers service not available", t)))
       .flatMapObservable(httpResponse -> Observable.fromIterable(httpResponse.bodyAsJsonArray()))
       .map(o -> new io.slinkydeveloper.brewery.beers.client.models.Beer((JsonObject)o))
