@@ -20,6 +20,6 @@ public class MainVerticle extends AbstractVerticle {
 
   @Override
   public void stop(Future<Void> fut) throws Exception {
-    messageConsumer.unregister(h -> fut.complete());
+    messageConsumer.unregister(fut);
   }
 }

@@ -31,6 +31,17 @@
         </dependencies>
     </dependencyManagement>
 
+  <repositories>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>jcenter-releases</id>
+      <name>jcenter</name>
+      <url>http://jcenter.bintray.com</url>
+    </repository>
+  </repositories>
+
     <dependencies>
       <dependency>
           <groupId>io.vertx</groupId>
@@ -66,6 +77,16 @@
       <dependency>
         <groupId>io.vertx</groupId>
         <artifactId>vertx-hazelcast</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-circuitbreaker</artifactId>
+        <version>0.14.1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-rxjava2</artifactId>
+        <version>0.14.1</version>
       </dependency>
     </dependencies>
 

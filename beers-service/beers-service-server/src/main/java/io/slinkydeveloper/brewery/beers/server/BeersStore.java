@@ -4,7 +4,6 @@ import io.slinkydeveloper.brewery.beers.client.models.Beer;
 import io.slinkydeveloper.brewery.beers.client.models.NewBeer;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.api.RequestParameters;
 
@@ -30,16 +29,17 @@ public class BeersStore {
   }
 
   public void handleGetBeersList(RoutingContext context) {
-    context
-      .response()
-      .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-      .end(beers
-        .values()
-        .stream()
-        .map(Beer::toJson)
-        .reduce(new JsonArray(), JsonArray::add, JsonArray::addAll)
-        .toBuffer()
-      );
+    context.response().setStatusCode(500).end();
+//    context
+//      .response()
+//      .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+//      .end(beers
+//        .values()
+//        .stream()
+//        .map(Beer::toJson)
+//        .reduce(new JsonArray(), JsonArray::add, JsonArray::addAll)
+//        .toBuffer()
+//      );
   }
 
   public void handleGetBeer(RoutingContext context) {

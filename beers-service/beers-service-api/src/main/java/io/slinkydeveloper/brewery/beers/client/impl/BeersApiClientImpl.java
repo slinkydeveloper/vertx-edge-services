@@ -55,7 +55,6 @@ public class BeersApiClientImpl implements BeersApiClient {
         HttpRequest request = client.get(uri);
 
         MultiMap requestCookies = MultiMap.caseInsensitiveMultiMap();
-        
 
         this.renderAndAttachCookieHeader(request, requestCookies);
         request.send(handler);
@@ -77,7 +76,6 @@ public class BeersApiClientImpl implements BeersApiClient {
         HttpRequest request = client.post(uri);
 
         MultiMap requestCookies = MultiMap.caseInsensitiveMultiMap();
-        
 
         this.renderAndAttachCookieHeader(request, requestCookies);
         request.send(handler);
@@ -101,7 +99,6 @@ public class BeersApiClientImpl implements BeersApiClient {
 
         MultiMap requestCookies = MultiMap.caseInsensitiveMultiMap();
         this.addHeaderParam("Content-Type", "application/json", request);
-        
 
         this.renderAndAttachCookieHeader(request, requestCookies);
         request.sendJson(body.toJson(), handler);
@@ -129,7 +126,6 @@ public class BeersApiClientImpl implements BeersApiClient {
         HttpRequest request = client.get(uri);
 
         MultiMap requestCookies = MultiMap.caseInsensitiveMultiMap();
-        
 
         this.renderAndAttachCookieHeader(request, requestCookies);
         request.send(handler);
@@ -157,7 +153,6 @@ public class BeersApiClientImpl implements BeersApiClient {
         HttpRequest request = client.delete(uri);
 
         MultiMap requestCookies = MultiMap.caseInsensitiveMultiMap();
-        
 
         this.renderAndAttachCookieHeader(request, requestCookies);
         request.send(handler);

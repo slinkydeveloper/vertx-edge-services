@@ -1,5 +1,7 @@
 package io.slinkydeveloper.brewery.api;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.operator.CircuitBreakerOperator;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.slinkydeveloper.brewery.api.models.ApiBeer;
@@ -8,6 +10,7 @@ import io.slinkydeveloper.brewery.beers.client.models.Beer;
 import io.slinkydeveloper.brewery.beers.client.models.NewBeer;
 import io.slinkydeveloper.brewery.beers.reactivex.client.BeersApiClient;
 import io.slinkydeveloper.brewery.styles.NewStyle;
+import io.slinkydeveloper.brewery.styles.Style;
 import io.slinkydeveloper.brewery.styles.StyleId;
 import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
 import io.vertx.core.json.JsonArray;
@@ -18,16 +21,24 @@ import io.vertx.reactivex.impl.AsyncResultSingle;
 public class BeersHandlers {
 
   BeersApiClient beersServiceClient;
+  CircuitBreaker beersCircuitBreaker;
   StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient;
+  CircuitBreaker stylesCircuitBreaker;
 
-  public BeersHandlers(BeersApiClient beersServiceClient, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient) {
+  public BeersHandlers(BeersApiClient beersServiceClient, CircuitBreaker beersCircuitBreaker, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient, CircuitBreaker stylesCircuitBreaker) {
     this.beersServiceClient = beersServiceClient;
+    this.beersCircuitBreaker = beersCircuitBreaker;
     this.stylesServiceClient = stylesServiceClient;
+    this.stylesCircuitBreaker = stylesCircuitBreaker;
   }
 
   public void handleGetBeers(RoutingContext rc) {
     beersServiceClient
       .rxGetBeersList()
+      .flatMap(res -> res.statusCode() != 200 ? Single.error(new WebException(500, "Beers service error")) : Single.just(res))
+      .retry(3)
+      .lift(CircuitBreakerOperator.of(beersCircuitBreaker))
+      .onErrorResumeNext(t -> Single.error(new WebException(503, "Beers service not available", t)))
       .flatMapObservable(httpResponse -> Observable.fromIterable(httpResponse.bodyAsJsonArray()))
       .map(o -> new io.slinkydeveloper.brewery.beers.client.models.Beer((JsonObject)o))
       .flatMapSingle(this::solveStyleAndBuildApiBeer)
@@ -89,7 +100,9 @@ public class BeersHandlers {
   public Single<ApiBeer> solveStyleAndBuildApiBeer(Beer b) {
     return AsyncResultSingle.<io.slinkydeveloper.brewery.styles.Style>toSingle(
       h -> stylesServiceClient.getStyle(StyleId.newBuilder().setId(b.getStyleId()).build(), h)
-    ).map(style ->
+    )
+      .flatMap(s -> (!Style.getDefaultInstance().equals(s)) ? Single.just(s) : Single.error(new WebException(404, "Style not found")))
+      .map(style ->
       new ApiBeer(
         b.getName(),
         new ApiStyle(

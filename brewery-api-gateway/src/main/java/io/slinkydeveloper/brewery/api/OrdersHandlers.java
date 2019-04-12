@@ -1,18 +1,20 @@
 package io.slinkydeveloper.brewery.api;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.operator.CircuitBreakerOperator;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.slinkydeveloper.brewery.api.models.ApiOrder;
 import io.slinkydeveloper.brewery.beers.reactivex.client.BeersApiClient;
 import io.slinkydeveloper.brewery.order.api.Order;
 import io.slinkydeveloper.brewery.order.reactivex.api.OrderService;
-import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.client.HttpResponse;
 import io.vertx.reactivex.ext.web.client.WebClient;
+import io.vertx.reactivex.ext.web.client.predicate.ResponsePredicate;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,16 +22,20 @@ import java.util.stream.Collectors;
 public class OrdersHandlers {
 
   private BeersApiClient beersServiceClient;
-  private StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient;
+  private CircuitBreaker beersCircuitBreaker;
   private WebClient customersServiceClient;
+  private CircuitBreaker customersCircuitBreaker;
   private OrderService orderServiceProxy;
+  private CircuitBreaker ordersCircuitBreaker;
   private BeersHandlers beersHandlers;
 
-  public OrdersHandlers(BeersApiClient beersServiceClient, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient, WebClient customersServiceClient, OrderService orderServiceProxy, BeersHandlers beersHandlers) {
+  public OrdersHandlers(BeersApiClient beersServiceClient, CircuitBreaker beersCircuitBreaker, WebClient customersServiceClient, CircuitBreaker customersCircuitBreaker, OrderService orderServiceProxy, CircuitBreaker ordersCircuitBreaker, BeersHandlers beersHandlers) {
     this.beersServiceClient = beersServiceClient;
-    this.stylesServiceClient = stylesServiceClient;
+    this.beersCircuitBreaker = beersCircuitBreaker;
     this.customersServiceClient = customersServiceClient;
+    this.customersCircuitBreaker = customersCircuitBreaker;
     this.orderServiceProxy = orderServiceProxy;
+    this.ordersCircuitBreaker = ordersCircuitBreaker;
     this.beersHandlers = beersHandlers;
   }
 
@@ -37,6 +43,9 @@ public class OrdersHandlers {
     this
       .orderServiceProxy
       .rxGetOrder(Long.parseLong(routingContext.pathParam("id")))
+      .lift(CircuitBreakerOperator.of(ordersCircuitBreaker))
+      .onErrorResumeNext(t -> Single.error(new WebException(503, "Service unavailable")))
+      .flatMap(o -> (o == null) ? Single.error(new WebException(404, "Cannot find order")) : Single.just(o))
       .flatMap(this::fillOrder)
       .subscribe(
         result ->
@@ -52,15 +61,22 @@ public class OrdersHandlers {
   public Single<ApiOrder> fillOrder(Order order) {
     return customersServiceClient
       .post("/graphql")
+      .expect(ResponsePredicate.SC_SUCCESS)
+      .expect(ResponsePredicate.JSON)
       .rxSendBuffer(Buffer.buffer("{\"query\":\"query {customer(id: \\\"" + order.getCustomerId() + "\\\"){id,name}}\\n\"}"))
+      .lift(CircuitBreakerOperator.of(customersCircuitBreaker))
+      .onErrorResumeNext(t -> Single.error(new WebException(500, t)))
       .map(HttpResponse::bodyAsJsonObject)
       .map(jo -> jo.getJsonObject("data").getJsonObject("customer"))
+      .flatMap(jo -> (jo != null) ? Single.just(jo) : Single.error(new WebException(404, "Cannot find customer")))
       .map(jo -> order.toJson().put("customerName", jo.getString("name")))
       .flatMap(jo ->
         Observable
           .fromIterable(jo.getJsonArray("beersId"))
           .flatMapSingle(o -> beersServiceClient.rxGetBeer(((Long)o).toString()))
+          .onErrorResumeNext((Throwable t) -> Observable.error(new WebException(500, t)))
           .map(r -> new io.slinkydeveloper.brewery.beers.client.models.Beer(r.bodyAsJsonObject()))
+          .onErrorResumeNext((Throwable t) -> Observable.error(new WebException(404, "Beer not found")))
           .flatMapSingle(beersHandlers::solveStyleAndBuildApiBeer)
           .collectInto(new JsonArray(), (j, apiBeer) -> j.add(apiBeer.toJson()))
           .map(beersArray -> jo.put("beers", beersArray))
