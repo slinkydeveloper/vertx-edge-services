@@ -13,6 +13,7 @@ import io.slinkydeveloper.brewery.styles.StyleId;
 import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.impl.AsyncResultSingle;
 
@@ -33,11 +34,11 @@ public class BeersHandlers {
   public void handleGetBeers(RoutingContext rc) {
     beersCircuitBreaker
       .execute(
-        beersServiceClient
+        () -> beersServiceClient
           .rxGetBeersList()
-          .flatMap(res -> res.statusCode() != 200 ? Single.error(new WebException(500, "Beers service error")) : Single.just(res))
+          .flatMap(res -> res.statusCode() != 200 ? Single.error(new HttpStatusException(500, "Beers service error")) : Single.just(res))
       )
-      .onErrorResumeNext(t -> Single.error(new WebException(503, "Beers service not available", t)))
+      .onErrorResumeNext(t -> Single.error(new HttpStatusException(503, "Beers service not available", t)))
       .flatMapObservable(httpResponse -> Observable.fromIterable(httpResponse.bodyAsJsonArray()))
       .map(o -> new io.slinkydeveloper.brewery.beers.client.models.Beer((JsonObject)o))
       .flatMapSingle(this::solveStyleAndBuildApiBeer)
@@ -100,7 +101,7 @@ public class BeersHandlers {
     return AsyncResultSingle.<io.slinkydeveloper.brewery.styles.Style>toSingle(
       h -> stylesServiceClient.getStyle(StyleId.newBuilder().setId(b.getStyleId()).build(), h)
     )
-      .flatMap(s -> (!Style.getDefaultInstance().equals(s)) ? Single.just(s) : Single.error(new WebException(404, "Style not found")))
+      .flatMap(s -> (!Style.getDefaultInstance().equals(s)) ? Single.just(s) : Single.error(new HttpStatusException(404, "Style not found")))
       .map(style ->
       new ApiBeer(
         b.getName(),

@@ -6,7 +6,9 @@ import io.slinkydeveloper.brewery.beers.reactivex.client.BeersApiClient;
 import io.slinkydeveloper.brewery.order.reactivex.api.OrderService;
 import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.core.http.HttpServer;
@@ -69,8 +71,16 @@ public class MainVerticle extends AbstractVerticle {
 
     router.errorHandler(500, rc -> {
       rc.failure().printStackTrace();
-      if (rc.failure() instanceof WebException) {
-        ((WebException)rc.failure()).writeJsonResponse(rc.response());
+      if (rc.failure() instanceof HttpStatusException) {
+        HttpStatusException failure = (HttpStatusException) rc.failure();
+        JsonObject res = new JsonObject().put("statusCode", failure.getStatusCode()).put("message", failure.getPayload());
+        if (failure.getCause() != null)
+          res.put("cause", failure.getCause().toString());
+        rc
+          .response()
+          .setStatusCode(failure.getStatusCode())
+          .putHeader("content-type", "application/json")
+          .end(res.encode());
       } else {
         rc
           .response()

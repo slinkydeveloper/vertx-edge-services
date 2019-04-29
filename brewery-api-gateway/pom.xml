@@ -81,6 +81,7 @@
       <dependency>
         <groupId>io.vertx</groupId>
         <artifactId>vertx-circuit-breaker</artifactId>
+        <version>3.7.0</version>
       </dependency>
     </dependencies>
 

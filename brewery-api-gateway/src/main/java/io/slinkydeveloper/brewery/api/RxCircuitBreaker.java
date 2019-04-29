@@ -6,6 +6,8 @@ import io.vertx.reactivex.circuitbreaker.CircuitBreaker;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.impl.AsyncResultSingle;
 
+import java.util.function.Supplier;
+
 public class RxCircuitBreaker {
 
   CircuitBreaker breaker;
@@ -14,10 +16,10 @@ public class RxCircuitBreaker {
     this.breaker = breaker;
   }
 
-  public <T> Single<T> execute(Single<T> s) {
+  public <T> Single<T> execute(Supplier<Single<T>> s) {
     return AsyncResultSingle.toSingle(h ->
         this.breaker
-          .<T>execute(fut -> s.subscribe(fut::complete, fut::fail))
+          .<T>execute(fut -> s.get().subscribe(fut::complete, fut::fail))
           .setHandler(h)
       );
   }

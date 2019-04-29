@@ -8,6 +8,7 @@ import io.slinkydeveloper.brewery.order.api.Order;
 import io.slinkydeveloper.brewery.order.reactivex.api.OrderService;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.client.HttpResponse;
@@ -41,8 +42,8 @@ public class OrdersHandlers {
     this
       .orderServiceProxy
       .rxGetOrder(Long.parseLong(routingContext.pathParam("id")))
-      .onErrorResumeNext(t -> Single.error(new WebException(503, "Service unavailable")))
-      .flatMap(o -> (o == null) ? Single.error(new WebException(404, "Cannot find order")) : Single.just(o))
+      .onErrorResumeNext(t -> Single.error(new HttpStatusException(503, "Service unavailable")))
+      .flatMap(o -> (o == null) ? Single.error(new HttpStatusException(404, "Cannot find order")) : Single.just(o))
       .flatMap(this::fillOrder)
       .subscribe(
         result ->
@@ -61,18 +62,18 @@ public class OrdersHandlers {
       .expect(ResponsePredicate.SC_SUCCESS)
       .expect(ResponsePredicate.JSON)
       .rxSendBuffer(Buffer.buffer("{\"query\":\"query {customer(id: \\\"" + order.getCustomerId() + "\\\"){id,name}}\\n\"}"))
-      .onErrorResumeNext(t -> Single.error(new WebException(500, t)))
+      .onErrorResumeNext(t -> Single.error(new HttpStatusException(500, t)))
       .map(HttpResponse::bodyAsJsonObject)
       .map(jo -> jo.getJsonObject("data").getJsonObject("customer"))
-      .flatMap(jo -> (jo != null) ? Single.just(jo) : Single.error(new WebException(404, "Cannot find customer")))
+      .flatMap(jo -> (jo != null) ? Single.just(jo) : Single.error(new HttpStatusException(404, "Cannot find customer")))
       .map(jo -> order.toJson().put("customerName", jo.getString("name")))
       .flatMap(jo ->
         Observable
           .fromIterable(jo.getJsonArray("beersId"))
           .flatMapSingle(o -> beersServiceClient.rxGetBeer(((Long)o).toString()))
-          .onErrorResumeNext((Throwable t) -> Observable.error(new WebException(500, t)))
+          .onErrorResumeNext((Throwable t) -> Observable.error(new HttpStatusException(500, t)))
           .map(r -> new io.slinkydeveloper.brewery.beers.client.models.Beer(r.bodyAsJsonObject()))
-          .onErrorResumeNext((Throwable t) -> Observable.error(new WebException(404, "Beer not found")))
+          .onErrorResumeNext((Throwable t) -> Observable.error(new HttpStatusException(404, "Beer not found")))
           .flatMapSingle(beersHandlers::solveStyleAndBuildApiBeer)
           .collectInto(new JsonArray(), (j, apiBeer) -> j.add(apiBeer.toJson()))
           .map(beersArray -> jo.put("beers", beersArray))

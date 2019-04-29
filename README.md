@@ -27,7 +27,6 @@ stop_everything.sh
 ## TODO
 
 * Improve doc of this experiment and start/stop things
-* Remove `WebException` and use plain `HttpStatusException`
 * Experiment gateway creation with Kotlin
 * Experiment gateway creation with vertx-web-api-contract/vertx-web-api-service (proxying to plain service-proxy?)
 * Rate limiting/quota
