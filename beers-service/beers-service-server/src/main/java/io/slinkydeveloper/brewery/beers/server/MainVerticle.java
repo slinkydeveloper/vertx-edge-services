@@ -5,8 +5,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -32,7 +32,11 @@ public class MainVerticle extends AbstractVerticle {
           rc.failure().printStackTrace(System.err);
           rc.response().setStatusCode(500).end(rc.failure().getMessage());
         });
-        server = vertx.createHttpServer(new HttpServerOptions().setPort(9001).setHost("localhost"));
+        server = vertx
+          .createHttpServer(new HttpServerOptions().setPort(9001).setHost("localhost"))
+          .exceptionHandler(err -> {
+            err.printStackTrace(System.err);
+          });
         server.requestHandler(router).listen();
         future.complete();
       } else {

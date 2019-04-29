@@ -4,12 +4,17 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.slinkydeveloper</groupId>
     <artifactId>orders-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>orders-service</name>
+
+  <parent>
+    <groupId>io.slinkydeveloper</groupId>
+    <artifactId>vertx-edge-services-experiment</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
 
     <modules>
         <module>orders-service-api</module>

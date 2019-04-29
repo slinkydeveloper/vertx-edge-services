@@ -4,21 +4,19 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>beers-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <packaging>pom</packaging>
-
-  <parent>
     <groupId>io.slinkydeveloper</groupId>
     <artifactId>vertx-edge-services-experiment</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-  </parent>
+    <packaging>pom</packaging>
 
-    <name>beers-service</name>
+    <name>vertx-edge-services-experiment</name>
 
     <modules>
-        <module>beers-service-api</module>
-        <module>beers-service-server</module>
+      <module>beers-service</module>
+      <module>orders-service</module>
+      <module>styles-service</module>
+      <module>customers-service</module>
+      <module>brewery-api-gateway</module>
     </modules>
 
     <properties>

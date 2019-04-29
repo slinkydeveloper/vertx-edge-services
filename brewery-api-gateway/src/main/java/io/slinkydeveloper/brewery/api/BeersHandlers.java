@@ -14,18 +14,22 @@ import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
+import io.vertx.httpproxy.HttpProxy;
+import io.vertx.reactivex.core.http.HttpClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.impl.AsyncResultSingle;
 
 public class BeersHandlers {
 
   BeersApiClient beersServiceClient;
+  HttpProxy beersServerProxy;
   RxCircuitBreaker beersCircuitBreaker;
   StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient;
   RxCircuitBreaker stylesCircuitBreaker;
 
-  public BeersHandlers(BeersApiClient beersServiceClient, RxCircuitBreaker beersCircuitBreaker, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient, RxCircuitBreaker stylesCircuitBreaker) {
+  public BeersHandlers(BeersApiClient beersServiceClient, HttpProxy beersServerProxy, RxCircuitBreaker beersCircuitBreaker, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient, RxCircuitBreaker stylesCircuitBreaker) {
     this.beersServiceClient = beersServiceClient;
+    this.beersServerProxy = beersServerProxy;
     this.beersCircuitBreaker = beersCircuitBreaker;
     this.stylesServiceClient = stylesServiceClient;
     this.stylesCircuitBreaker = stylesCircuitBreaker;
@@ -66,6 +70,10 @@ public class BeersHandlers {
             .end(result.toJson().encode()),
         rc::fail
       );
+  }
+
+  public void handleRemoveBeer(RoutingContext rc) {
+    beersServerProxy.handle(rc.request().getDelegate());
   }
 
   private Single<ApiBeer> addBeerAndStyle(JsonObject beer) {
@@ -114,5 +122,11 @@ public class BeersHandlers {
         b.getId()
       )
     );
+  }
+
+  public static HttpProxy configureBeersServiceProxy(HttpClient client) {
+    return HttpProxy
+      .reverseProxy(client.getDelegate())
+      .target(9001, "localhost");
   }
 }

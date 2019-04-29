@@ -4,11 +4,16 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.slinkydeveloper</groupId>
   <artifactId>customers-service</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
   <name>customers-service</name>
+
+  <parent>
+    <groupId>io.slinkydeveloper</groupId>
+    <artifactId>vertx-edge-services-experiment</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
 
   <properties>
     <vertx.verticle>io.slinkydeveloper.brewery.customers.MainVerticle</vertx.verticle>

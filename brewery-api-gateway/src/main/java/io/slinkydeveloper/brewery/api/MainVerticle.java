@@ -6,11 +6,15 @@ import io.slinkydeveloper.brewery.beers.reactivex.client.BeersApiClient;
 import io.slinkydeveloper.brewery.order.reactivex.api.OrderService;
 import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.grpc.VertxChannelBuilder;
+import io.vertx.httpproxy.HttpProxy;
 import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.reactivex.core.http.HttpClient;
 import io.vertx.reactivex.core.http.HttpServer;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.client.WebClient;
@@ -24,7 +28,9 @@ public class MainVerticle extends AbstractVerticle {
       .setMaxRetries(3);
 
     // Create the clients
-    BeersApiClient beersServiceClient = BeersApiClient.newInstance(new BeersApiClientImpl(vertx.getDelegate(), "localhost", 9001));
+    HttpClient beersServerClient = vertx.createHttpClient(new HttpClientOptions().setDefaultHost("localhost").setDefaultPort(9001));
+    HttpProxy beersServerProxy = BeersHandlers.configureBeersServiceProxy(beersServerClient);
+    BeersApiClient beersServiceClient = BeersApiClient.newInstance(new BeersApiClientImpl(io.vertx.ext.web.client.WebClient.wrap(beersServerClient.getDelegate())));
     RxCircuitBreaker beersCircuitBreaker = RxCircuitBreaker.create("beers", vertx, circuitBreakerOptions);
     StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient = StylesServiceGrpc.newVertxStub(
       VertxChannelBuilder
@@ -38,7 +44,7 @@ public class MainVerticle extends AbstractVerticle {
     OrderService orderServiceProxy = OrderService.createProxy(vertx, "orders.myapplication");
     RxCircuitBreaker ordersCircuitBreaker = RxCircuitBreaker.create("orders", vertx, circuitBreakerOptions);
 
-    BeersHandlers beersHandlers = new BeersHandlers(beersServiceClient, beersCircuitBreaker, stylesServiceClient, stylesCircuitBreaker);
+    BeersHandlers beersHandlers = new BeersHandlers(beersServiceClient, beersServerProxy, beersCircuitBreaker, stylesServiceClient, stylesCircuitBreaker);
     CustomersHandlers customersHandlers = new CustomersHandlers(customersServiceClient);
     OrdersHandlers ordersHandlers = new OrdersHandlers(beersServiceClient, beersCircuitBreaker, customersServiceClient, customersCircuitBreaker, orderServiceProxy, ordersCircuitBreaker, beersHandlers);
 
@@ -52,6 +58,9 @@ public class MainVerticle extends AbstractVerticle {
     router
       .post("/beer")
       .handler(beersHandlers::handlePostBeer);
+    router
+      .delete("/beer/:beerId")
+      .handler(beersHandlers::handleRemoveBeer);
 
     router
       .get("/customer")
@@ -93,5 +102,10 @@ public class MainVerticle extends AbstractVerticle {
     server.requestHandler(router);
 
     return Completable.fromSingle(server.rxListen(8000));
+  }
+
+  public static void main(String[] args) {
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(new MainVerticle());
   }
 }

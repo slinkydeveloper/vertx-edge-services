@@ -12,16 +12,10 @@ There are five subprojects:
 
 ## Start/Stop scripts
 
-There are a couple of helper scripts to start everything. To build and start:
+There are a couple of helper scripts to start everything. To build:
 
 ```bash
-package_everything.sh && start_everything.sh
-```
-
-To stop:
-
-```bash
-stop_everything.sh
+mvn clean install
 ```
 
 ## TODO
@@ -31,6 +25,6 @@ stop_everything.sh
 * Experiment gateway creation with vertx-web-api-contract/vertx-web-api-service (proxying to plain service-proxy?)
 * Rate limiting/quota
 * AuthN/Z
-* Reverse proxying
+* Reverse proxying (Not working!!!)
 * Monitoring
 * Deploy challenges
