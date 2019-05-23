@@ -34,7 +34,6 @@ public class MainVerticle extends AbstractVerticle {
     // Create the clients
     // Beers service
     HttpClient beersServerClient = vertx.createHttpClient(new HttpClientOptions().setDefaultHost("localhost").setDefaultPort(9001));
-    HttpProxy beersServerProxy = BeersHandlers.configureBeersServiceProxy(beersServerClient);
     BeersApiClient beersServiceClient = BeersApiClient.newInstance(new BeersApiClientImpl(io.vertx.ext.web.client.WebClient.wrap(beersServerClient.getDelegate())));
     RxCircuitBreaker beersCircuitBreaker = RxCircuitBreaker.create("beers", vertx, circuitBreakerOptions);
 
@@ -72,7 +71,11 @@ public class MainVerticle extends AbstractVerticle {
       .handler(beersHandlers::handlePostBeer);
     router
       .delete("/beer/:beerId")
-      .handler(ProxyWithServiceDiscoveryHandler.create(beersServerProxy, serviceDiscovery, "beers"));
+      .handler(ProxyWithServiceDiscoveryHandler.create(
+        HttpProxy.reverseProxy(vertx.createHttpClient().getDelegate()),
+        serviceDiscovery,
+        "beers"
+      ));
 
     router
       .get("/customer")

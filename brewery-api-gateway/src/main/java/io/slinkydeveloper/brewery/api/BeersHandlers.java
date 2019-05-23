@@ -14,8 +14,6 @@ import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
-import io.vertx.httpproxy.HttpProxy;
-import io.vertx.reactivex.core.http.HttpClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.impl.AsyncResultSingle;
 
@@ -116,11 +114,5 @@ public class BeersHandlers {
         b.getId()
       )
     );
-  }
-
-  public static HttpProxy configureBeersServiceProxy(HttpClient client) {
-    return HttpProxy
-      .reverseProxy(client.getDelegate())
-      .target(9001, "localhost");
   }
 }
