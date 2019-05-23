@@ -7,14 +7,20 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import io.vertx.servicediscovery.Record;
+import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.types.HttpEndpoint;
 
 public class MainVerticle extends AbstractVerticle {
 
   HttpServer server;
+  ServiceDiscovery discovery;
+  Record record;
 
   @Override
   public void start(Future<Void> future) {
     BeersStore beersStore = new BeersStore(vertx);
+    discovery = ServiceDiscovery.create(vertx);
 
     OpenAPI3RouterFactory.create(this.vertx, "openapi.yaml", openAPI3RouterFactoryAsyncResult -> {
       if (openAPI3RouterFactoryAsyncResult.succeeded()) {
@@ -37,8 +43,13 @@ public class MainVerticle extends AbstractVerticle {
           .exceptionHandler(err -> {
             err.printStackTrace(System.err);
           });
+
         server.requestHandler(router).listen();
-        future.complete();
+
+        // Let the service discovery find us
+        record = HttpEndpoint.createRecord("beers", "localhost", 9001, "/");
+
+        discovery.publish(record, ar -> future.complete());
       } else {
         future.fail(openAPI3RouterFactoryAsyncResult.cause());
       }
@@ -46,8 +57,9 @@ public class MainVerticle extends AbstractVerticle {
   }
 
   @Override
-  public void stop(){
+  public void stop(Future<Void> fut){
     this.server.close();
+    discovery.unpublish(record.getRegistration(), fut);
   }
 
   public static void main(String[] args) {

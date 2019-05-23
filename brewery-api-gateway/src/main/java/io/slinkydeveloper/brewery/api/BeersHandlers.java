@@ -22,14 +22,12 @@ import io.vertx.reactivex.impl.AsyncResultSingle;
 public class BeersHandlers {
 
   BeersApiClient beersServiceClient;
-  HttpProxy beersServerProxy;
   RxCircuitBreaker beersCircuitBreaker;
   StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient;
   RxCircuitBreaker stylesCircuitBreaker;
 
-  public BeersHandlers(BeersApiClient beersServiceClient, HttpProxy beersServerProxy, RxCircuitBreaker beersCircuitBreaker, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient, RxCircuitBreaker stylesCircuitBreaker) {
+  public BeersHandlers(BeersApiClient beersServiceClient, RxCircuitBreaker beersCircuitBreaker, StylesServiceGrpc.StylesServiceVertxStub stylesServiceClient, RxCircuitBreaker stylesCircuitBreaker) {
     this.beersServiceClient = beersServiceClient;
-    this.beersServerProxy = beersServerProxy;
     this.beersCircuitBreaker = beersCircuitBreaker;
     this.stylesServiceClient = stylesServiceClient;
     this.stylesCircuitBreaker = stylesCircuitBreaker;
@@ -70,10 +68,6 @@ public class BeersHandlers {
             .end(result.toJson().encode()),
         rc::fail
       );
-  }
-
-  public void handleRemoveBeer(RoutingContext rc) {
-    beersServerProxy.handle(rc.request().getDelegate());
   }
 
   private Single<ApiBeer> addBeerAndStyle(JsonObject beer) {

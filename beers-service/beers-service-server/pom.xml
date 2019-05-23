@@ -35,6 +35,14 @@
       <artifactId>vertx-web</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-hazelcast</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-service-discovery</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.slinkydeveloper</groupId>
       <artifactId>beers-service-api</artifactId>
       <version>0.0.1-SNAPSHOT</version>
@@ -58,6 +66,9 @@
         </executions>
         <configuration>
           <redeploy>true</redeploy>
+          <runArgs>
+            <runArg>--cluster</runArg>
+          </runArgs>
         </configuration>
       </plugin>
     </plugins>
