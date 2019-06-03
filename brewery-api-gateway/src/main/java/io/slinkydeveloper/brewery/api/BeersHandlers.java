@@ -13,6 +13,7 @@ import io.slinkydeveloper.brewery.styles.StyleId;
 import io.slinkydeveloper.brewery.styles.StylesServiceGrpc;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.ServiceResponse;
 import io.vertx.ext.web.handler.impl.HttpStatusException;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.impl.AsyncResultSingle;
@@ -31,8 +32,8 @@ public class BeersHandlers {
     this.stylesCircuitBreaker = stylesCircuitBreaker;
   }
 
-  public void handleGetBeers(RoutingContext rc) {
-    beersCircuitBreaker
+  public Single<ServiceResponse> handleGetBeers(RoutingContext rc) {
+    return beersCircuitBreaker
       .execute(
         () -> beersServiceClient
           .rxGetBeersList()
@@ -43,29 +44,14 @@ public class BeersHandlers {
       .map(o -> new io.slinkydeveloper.brewery.beers.client.models.Beer((JsonObject)o))
       .flatMapSingle(this::solveStyleAndBuildApiBeer)
       .collectInto(new JsonArray(), (j, apiBeer) -> j.add(apiBeer.toJson()))
-      .subscribe(
-        result ->
-          rc
-            .response()
-            .setStatusCode(200)
-            .putHeader("content-type", "application/json")
-            .end(result.encode()),
-        rc::fail
-      );
+      .map(ServiceResponse::completedWithJson);
   }
 
-  public void handlePostBeer(RoutingContext rc) {
+  public Single<ServiceResponse> handlePostBeer(RoutingContext rc) {
     JsonObject body = rc.getBodyAsJson();
-    ((body.containsKey("style")) ? addBeerAndStyle(body) : addBeer(body))
-      .subscribe(
-        result ->
-          rc
-            .response()
-            .setStatusCode(200)
-            .putHeader("content-type", "application/json")
-            .end(result.toJson().encode()),
-        rc::fail
-      );
+    return ((body.containsKey("style")) ? addBeerAndStyle(body) : addBeer(body))
+      .map(ApiBeer::toJson)
+      .map(ServiceResponse::completedWithJson);
   }
 
   private Single<ApiBeer> addBeerAndStyle(JsonObject beer) {

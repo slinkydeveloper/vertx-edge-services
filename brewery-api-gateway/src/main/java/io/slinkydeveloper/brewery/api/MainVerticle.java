@@ -64,11 +64,11 @@ public class MainVerticle extends AbstractVerticle {
     router
       .get("/beer")
       .handler(BodyHandler.create())
-      .handler(beersHandlers::handleGetBeers);
+      .function(beersHandlers::handleGetBeers);
     router
       .post("/beer")
       .handler(BodyHandler.create())
-      .handler(beersHandlers::handlePostBeer);
+      .function(beersHandlers::handlePostBeer);
     router
       .delete("/beer/:beerId")
       .handler(ProxyWithServiceDiscoveryHandler.create(
